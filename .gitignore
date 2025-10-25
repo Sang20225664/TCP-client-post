@@ -1,0 +1,8 @@
+*.o
+*.txt
+*.png
+client
+server
+.vscode
+tests/*
+
