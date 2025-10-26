@@ -10,19 +10,32 @@
 #include <sys/wait.h>
 #include <errno.h>
 
-#define PORT 5500
+#include "protocol/protocol.h"
+
 #define BACKLOG 20
 #define BUFF_SIZE 4096
 
-void echo(int sockfd);
 void sig_chld(int signo);
 
-int main()
+int main(int argc, char *argv[])
 {
+    if (argc != 2)
+    {
+        printf("Usage: %s <Server_Port>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    int PORT = atoi(argv[1]);
+    if (PORT <= 0)
+    {
+        printf("Invalid port number.\n");
+        exit(EXIT_FAILURE);
+    }
+
     int listen_sock, conn_sock;
     struct sockaddr_in server_addr, client_addr;
     pid_t pid;
-    int sin_size;
+    socklen_t sin_size;
 
     // Create socket
     if ((listen_sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -48,28 +61,27 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    // Establish a signal handler to catch SIGCHILD
     signal(SIGCHLD, sig_chld);
 
     printf("Server started at port %d...\n", PORT);
 
     while (1)
     {
-        sin_size = sizeof(struct sockaddr_in);
-        if ((conn_sock = accept(listen_sock, (struct sockaddr *)&client_addr, (socklen_t *)&sin_size)) == -1)
+        sin_size = sizeof(client_addr);
+        conn_sock = accept(listen_sock, (struct sockaddr *)&client_addr, &sin_size);
+        if (conn_sock == -1)
         {
             if (errno == EINTR)
                 continue;
             perror("accept() error");
-            exit(EXIT_FAILURE);
+            continue;
         }
 
-        // Fork a child process to handle new client
         pid = fork();
         if (pid < 0)
         {
             perror("fork() error");
-            exit(EXIT_FAILURE);
+            continue;
         }
 
         if (pid == 0)
@@ -83,11 +95,11 @@ int main()
 
             printf("You got a connection from %s:%d\n", client_ip, client_port);
 
-            echo(conn_sock);
+            handle_protocol(conn_sock);
+            close(conn_sock);
             exit(0);
         }
 
-        // Parent closes this socket, child handles it
         close(conn_sock);
     }
 
@@ -95,45 +107,8 @@ int main()
     return 0;
 }
 
-// Handle dead child (prevent zombie processes)
 void sig_chld(int signo)
 {
-    pid_t pid;
-    int stat;
-
-    while ((pid = waitpid(-1, &stat, WNOHANG)) > 0)
-        printf("Child %d terminated\n", pid);
-}
-
-// Echo service
-void echo(int sockfd)
-{
-    char buff[BUFF_SIZE];
-    int len;
-
-    while (1)
-    {
-        len = recv(sockfd, buff, BUFF_SIZE, 0);
-        if (len < 0)
-        {
-            perror("recv() error");
-            break;
-        }
-        else if (len == 0)
-        {
-            printf("Client closed connection.\n");
-            break;
-        }
-
-        buff[len] = '\0';
-        printf("Received: %s\n", buff);
-
-        if (send(sockfd, buff, len, 0) < 0)
-        {
-            perror("send() error");
-            break;
-        }
-    }
-
-    close(sockfd);
+    while (waitpid(-1, NULL, WNOHANG) > 0)
+        ;
 }

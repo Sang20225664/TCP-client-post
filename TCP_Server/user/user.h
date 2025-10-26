@@ -1,19 +1,16 @@
 #ifndef USER_H
 #define USER_H
 
-#include <string>
-#include <vector>
-using namespace std;
+#define MAX_NAME 512
+#define MAX_USERS 11000 // Increased from 100 to support more accounts
 
-// Create a struct to represent a user
-// Each user has a name and a status (0 for offline, 1 for online)
-struct User
+typedef struct
 {
-    string name;
-    int status;
-};
+    char name[MAX_NAME];
+    int status; // 0 = blocked, 1 = active
+} User;
 
-// Function to read user accounts from a file
-vector<User> loadAccounts(const string &filename);
+int loadAccounts(const char *filename, User users[], int max_users);
+int findUser(const char *username, User users[], int count);
 
 #endif
