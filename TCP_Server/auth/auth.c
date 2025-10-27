@@ -7,7 +7,9 @@ int processUSER(char *username, int *logged_in, int *current_index, User users[]
     int idx = findUser(username, users, user_count);
 
     if (*logged_in)
+    {
         return 213; // already logged in
+    }
 
     if (idx == -1)
         return 212; // not exist

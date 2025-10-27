@@ -17,55 +17,67 @@ void handle_protocol(int sockfd)
     char buff[4096];
     int len;
 
-    // Send welcome code to client
-    send(sockfd, CODE_WELCOME, strlen(CODE_WELCOME), 0);
+    send(sockfd, "100 Welcome to server", 21, 0);
 
     while ((len = recv(sockfd, buff, sizeof(buff) - 1, 0)) > 0)
     {
         buff[len] = '\0';
 
-        char *newline = strchr(buff, '\r');
-        if (newline)
-            *newline = '\0';
-        newline = strchr(buff, '\n');
-        if (newline)
-            *newline = '\0';
-
-        printf("[Client] %s\n", buff);
-
         char cmd[10] = {0};
         char arg[512] = {0};
+        char res[128];
 
-        if (sscanf(buff, "%9s %511[^\n]", cmd, arg) < 1)
-        {
-            send(sockfd, CODE_UNKNOWN_CMD, strlen(CODE_UNKNOWN_CMD), 0);
-            continue;
-        }
+        sscanf(buff, "%9s %511[^\n]", cmd, arg);
+
+        printf("[Client] %s\n", buff);
 
         if (strcmp(cmd, "USER") == 0)
         {
             int code = processUSER(arg, &logged_in, &current_user_index, users, user_count);
-            char res[8];
-            sprintf(res, "%d", code);
+
+            if (code == 110)
+                sprintf(res, "110 - Login successful");
+            else if (code == 211)
+                sprintf(res, "211 - User blocked");
+            else if (code == 212)
+                sprintf(res, "212 - User not found");
+            else if (code == 213)
+                sprintf(res, "213 - Login failed! Already logged in");
+            else
+                sprintf(res, "300 - Undefined error");
+
             send(sockfd, res, strlen(res), 0);
         }
         else if (strcmp(cmd, "POST") == 0)
         {
             int code = processPOST(arg, logged_in);
-            char res[8];
-            sprintf(res, "%d", code);
+
+            if (code == 120)
+                sprintf(res, "120 - Post message successful");
+            else if (code == 221)
+                sprintf(res, "221 - You must login first");
+            else
+                sprintf(res, "300 - Undefined command");
+
             send(sockfd, res, strlen(res), 0);
         }
         else if (strcmp(cmd, "BYE") == 0)
         {
             int code = processBYE(&logged_in);
-            char res[8];
-            sprintf(res, "%d", code);
+
+            if (code == 130)
+                sprintf(res, "130 - Logout successful");
+            else if (code == 221)
+                sprintf(res, "221 - You must login first");
+            else
+                sprintf(res, "300 - Undefined command");
+
             send(sockfd, res, strlen(res), 0);
         }
         else
         {
-            send(sockfd, CODE_UNKNOWN_CMD, strlen(CODE_UNKNOWN_CMD), 0);
+            sprintf(res, "300 - Undefined command");
+            send(sockfd, res, strlen(res), 0);
         }
     }
 

@@ -1,9 +1,12 @@
-#ifndef CLIENT_PROTOCOL_H
-#define CLIENT_PROTOCOL_H
+#ifndef PROTOCOL_H
+#define PROTOCOL_H
 
-#include <unistd.h>
+#include <sys/socket.h>
 
+#define BUFF_SIZE 1024
+
+// Declare functions used by the client
 void receive_server_message(int sockfd);
-void send_command(int sockfd, const char *cmd);
+void send_and_receive(int sockfd, const char *msg);
 
-#endif
+#endif // PROTOCOL_H

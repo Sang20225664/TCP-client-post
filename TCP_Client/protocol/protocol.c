@@ -2,27 +2,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <stdlib.h>
 
-#define BUFF_SIZE 1024
-
-void receive_server_message(int sockfd)
+void send_and_receive(int sockfd, const char *msg)
 {
-    char buff[BUFF_SIZE];
-    int len = recv(sockfd, buff, BUFF_SIZE - 1, 0);
+    char recv_buff[BUFF_SIZE];
+    send(sockfd, msg, strlen(msg), 0);
 
-    if (len > 0)
+    int bytes = recv(sockfd, recv_buff, BUFF_SIZE - 1, 0);
+    if (bytes > 0)
     {
-        buff[len] = '\0';
-        printf("Server response: %s\n", buff);
+        recv_buff[bytes] = '\0';
+        printf("Server response: %s\n\n", recv_buff);
     }
-    else if (len == 0)
-    {
-        printf("Server closed connection.\n");
-    }
-}
-
-void send_command(int sockfd, const char *cmd)
-{
-    send(sockfd, cmd, strlen(cmd), 0);
-    receive_server_message(sockfd);
 }

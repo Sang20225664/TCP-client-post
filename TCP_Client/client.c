@@ -11,7 +11,6 @@
 int main(int argc, char *argv[])
 {
     int clientfd;
-    char command[BUFF_SIZE];
     struct sockaddr_in servAddr;
 
     if (argc != 3)
@@ -24,42 +23,83 @@ int main(int argc, char *argv[])
     int SERVER_PORT = atoi(argv[2]);
 
     clientfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (clientfd < 0)
+    {
+        perror("Socket creation failed");
+        exit(1);
+    }
 
     memset(&servAddr, 0, sizeof(servAddr));
     servAddr.sin_family = AF_INET;
     servAddr.sin_port = htons(SERVER_PORT);
     inet_pton(AF_INET, SERVER_IP, &servAddr.sin_addr);
 
-    connect(clientfd, (struct sockaddr *)&servAddr, sizeof(servAddr));
+    if (connect(clientfd, (struct sockaddr *)&servAddr, sizeof(servAddr)) < 0)
+    {
+        perror("Connection to server failed");
+        exit(1);
+    }
 
     printf("Connected to server %s:%d\n", SERVER_IP, SERVER_PORT);
 
     // Receive welcome message from server (100)
-    receive_server_message(clientfd);
+    send_and_receive(clientfd, "");
 
     while (1)
     {
-        printf("\nEnter command: ");
-        fgets(command, BUFF_SIZE, stdin);
-        command[strcspn(command, "\n")] = '\0';
+        printf("====== MENU ======\n");
+        printf("1. Login\n");
+        printf("2. Post Message\n");
+        printf("3. Logout\n");
+        printf("4. Exit\n");
+        printf("Enter choice: ");
 
-        if (strlen(command) == 0)
-            break;
-
-        send(clientfd, command, strlen(command), 0);
-
-        // Receive server response
-        char response[BUFF_SIZE];
-        int len = recv(clientfd, response, BUFF_SIZE - 1, 0);
-
-        if (len <= 0)
+        int choice;
+        if (scanf("%d", &choice) != 1)
         {
-            printf("Server closed connection.\n");
+            printf("Invalid input.\n\n");
+            while (getchar() != '\n')
+                ;
+            continue;
+        }
+        while (getchar() != '\n')
+            ; // drop newline
+
+        if (choice == 1)
+        {
+            char username[100];
+            printf("Enter username: ");
+            fgets(username, sizeof(username), stdin);
+            username[strcspn(username, "\n")] = '\0';
+
+            char msg[128];
+            snprintf(msg, sizeof(msg), "USER %s", username);
+            send_and_receive(clientfd, msg);
+        }
+        else if (choice == 2)
+        {
+            char content[512];
+            printf("Enter post message: ");
+            fgets(content, sizeof(content), stdin);
+            content[strcspn(content, "\n")] = '\0';
+
+            char msg[600];
+            snprintf(msg, sizeof(msg), "POST %s", content);
+            send_and_receive(clientfd, msg);
+        }
+        else if (choice == 3)
+        {
+            send_and_receive(clientfd, "BYE");
+        }
+        else if (choice == 4)
+        {
+            printf("Bye!\n");
             break;
         }
-
-        response[len] = '\0';
-        printf("Server response: %s\n", response);
+        else
+        {
+            printf("Invalid choice.\n\n");
+        }
     }
 
     close(clientfd);
