@@ -6,6 +6,16 @@
 #include <unistd.h>
 #include <sys/socket.h>
 
+/**
+ * @brief Handle the protocol communication with a connected client
+ * @param sockfd The socket file descriptor for the connected client
+ * @return void
+ * - Description
+ * Function to manage the communication protocol with a connected client.
+ * Processes commands such as USER, POST, and BYE, and sends appropriate
+ * responses based on the client's requests and authentication status.
+ */
+
 void handle_protocol(int sockfd)
 {
     User users[MAX_USERS];

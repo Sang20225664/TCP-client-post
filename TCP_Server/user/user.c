@@ -2,6 +2,14 @@
 #include <stdio.h>
 #include <string.h>
 
+/**
+ * @brief Load user accounts from a file
+ * @param filename The name of the file containing user accounts
+ * @param users Array to store loaded User structs
+ * @param max_users Maximum number of users to load
+ * @return int Number of users loaded
+ */
+
 int loadAccounts(const char *filename, User users[], int max_users)
 {
     FILE *file = fopen(filename, "r");
@@ -32,6 +40,14 @@ int loadAccounts(const char *filename, User users[], int max_users)
     printf("Loaded %d accounts\n", count);
     return count;
 }
+
+/**
+ * @brief Find a user by username
+ * @param username The username to search for
+ * @param users Array of User structs
+ * @param count Number of users in the array
+ * @return int Index of the user in the array, or -1 if not found
+ */
 
 int findUser(const char *username, User users[], int count)
 {

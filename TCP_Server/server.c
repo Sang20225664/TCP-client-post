@@ -17,6 +17,13 @@
 
 void sig_chld(int signo);
 
+/**
+ * @brief TCP Server Application
+ * Listens for incoming TCP connections and handles client requests
+ * using a defined protocol.
+ *
+ */
+
 int main(int argc, char *argv[])
 {
     if (argc != 2)
@@ -107,8 +114,15 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+/**
+ * @brief Signal handler for SIGCHLD to reap zombie processes
+ * @param signo Signal number
+ */
+
 void sig_chld(int signo)
 {
-    while (waitpid(-1, NULL, WNOHANG) > 0)
-        ;
+    pid_t pid;
+    int stat;
+    while ((pid = waitpid(-1, &stat, WNOHANG)) > 0)
+        printf("Child %d terminated\n", pid);
 }

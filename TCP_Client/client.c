@@ -8,6 +8,12 @@
 
 #define BUFF_SIZE 1024
 
+/**
+ * @brief TCP Client Application
+ * Connects to a TCP server, allows user to login, post messages, and logout.
+ *
+ */
+
 int main(int argc, char *argv[])
 {
     int clientfd;
