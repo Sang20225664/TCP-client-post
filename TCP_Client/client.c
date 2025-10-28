@@ -9,51 +9,53 @@
 #define BUFF_SIZE 1024
 
 /**
- * @brief TCP Client Application
- * Connects to a TCP server, allows user to login, post messages, and logout.
- *
+ * @brief Main function for TCP client
+ * @param argc Argument count
+ * @param argv Argument vector
+ * -description
+ * Connects to the server specified by command line arguments.
+ * Displays a menu for user interaction to login, post messages, logout, or exit.
+ * Uses protocol functions to communicate with the server.
  */
 
 int main(int argc, char *argv[])
 {
-    int clientfd;
-    struct sockaddr_in servAddr;
-
     if (argc != 3)
     {
         printf("Usage: %s <Server_IP> <Server_Port>\n", argv[0]);
         exit(1);
     }
 
+    int clientfd;
+    struct sockaddr_in servAddr;
+
     char *SERVER_IP = argv[1];
     int SERVER_PORT = atoi(argv[2]);
 
-    clientfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (clientfd < 0)
+    if ((clientfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
         perror("Socket creation failed");
         exit(1);
     }
 
-    memset(&servAddr, 0, sizeof(servAddr));
     servAddr.sin_family = AF_INET;
     servAddr.sin_port = htons(SERVER_PORT);
     inet_pton(AF_INET, SERVER_IP, &servAddr.sin_addr);
 
     if (connect(clientfd, (struct sockaddr *)&servAddr, sizeof(servAddr)) < 0)
     {
-        perror("Connection to server failed");
+        perror("Connect failed");
         exit(1);
     }
 
     printf("Connected to server %s:%d\n", SERVER_IP, SERVER_PORT);
 
-    // Receive welcome message from server (100)
-    send_and_receive(clientfd, "");
+    // first welcome message
+    receive_line(clientfd);
 
     while (1)
     {
-        printf("====== MENU ======\n");
+        printf("\n====== MENU ======\n");
         printf("1. Login\n");
         printf("2. Post Message\n");
         printf("3. Logout\n");
@@ -61,54 +63,48 @@ int main(int argc, char *argv[])
         printf("Enter choice: ");
 
         int choice;
-        if (scanf("%d", &choice) != 1)
-        {
-            printf("Invalid input.\n\n");
-            while (getchar() != '\n')
-                ;
-            continue;
-        }
-        while (getchar() != '\n')
-            ; // drop newline
+        scanf("%d", &choice);
+        getchar(); // clear newline in buffer
 
-        if (choice == 1)
+        char text[600];
+
+        switch (choice)
+        {
+        case 1:
         {
             char username[100];
             printf("Enter username: ");
             fgets(username, sizeof(username), stdin);
             username[strcspn(username, "\n")] = '\0';
 
-            char msg[128];
-            snprintf(msg, sizeof(msg), "USER %s", username);
-            send_and_receive(clientfd, msg);
+            snprintf(text, sizeof(text), "USER %s", username);
+            send_and_receive(clientfd, text);
+            break;
         }
-        else if (choice == 2)
+
+        case 2:
         {
             char content[512];
-            printf("Enter post message: ");
+            printf("Enter message: ");
             fgets(content, sizeof(content), stdin);
             content[strcspn(content, "\n")] = '\0';
 
-            char msg[600];
-            snprintf(msg, sizeof(msg), "POST %s", content);
-            send_and_receive(clientfd, msg);
-        }
-        else if (choice == 3)
-        {
-            send_and_receive(clientfd, "BYE");
-        }
-        else if (choice == 4)
-        {
-            printf("Bye!\n");
+            snprintf(text, sizeof(text), "POST %s", content);
+            send_and_receive(clientfd, text);
             break;
         }
-        else
-        {
-            printf("Invalid choice.\n\n");
+
+        case 3:
+            send_and_receive(clientfd, "BYE");
+            break;
+
+        case 4:
+            printf("Client exit.\n");
+            close(clientfd);
+            return 0;
+
+        default:
+            printf("Invalid choice.\n");
         }
     }
-
-    close(clientfd);
-    printf("Connection closed.\n");
-    return 0;
 }
